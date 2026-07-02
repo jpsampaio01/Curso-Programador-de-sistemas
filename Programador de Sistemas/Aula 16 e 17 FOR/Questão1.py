@@ -6,6 +6,6 @@ for i in range(1, 20, 2):
     print(i)
 
 #Modo dificil mas funciona em qualquer situação.
-for i in range(20):
+for i in range(21):
     if i % 2 != 0:
         print(i)
