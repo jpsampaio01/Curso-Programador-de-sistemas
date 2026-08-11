@@ -5,13 +5,13 @@ from tkinter import messagebox, simpledialog, ttk
 # ==========================================
 # PALETA DE CORES (DESIGN BONITINHO)
 # ==========================================
-COR_FUNDO = "#F4F6F9"  # Cinza bem claro moderno
+COR_FUNDO = "#fef3e8"  # Cinza bem claro moderno
 COR_CARD = "#FFFFFF"  # Branco para os painéis
-COR_TEXTO = "#0542BB"  # Cinza escuro para leitura confortável
+COR_TEXTO = "#01040AFB"  # Cinza escuro para leitura confortável
 COR_PRIMARIA = "#1E3A8A"  # Azul escuro elegante (Botões principais)
 COR_SUCESSO = "#10B981"  # Verde esmeralda (Salvar)
 COR_ALERTA = "#F59E0B"  # Laranja suave (Editar)
-COR_PERIGO = "#EF4444"  # Vermelho moderno (Excluir)
+COR_PERIGO = "#472107"  # Vermelho moderno (Excluir)
 COR_TEXTO_BOTAO = "#FFFFFF"  # Texto branco nos botões
 COR_NEUTRA = "#FFFFFF"  # Branco para elementos neutros
 COR_NEUTRA2 = "#E2E2E2"
