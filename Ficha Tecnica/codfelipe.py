@@ -1,30 +1,33 @@
 import sqlite3
 import tkinter as tk
-import tkinter.messagebox as messagebox
-import tkinter.filedialog as filedialog
-from tkinter import ttk
+import tkinter.messagebox as messagebox                         # mensagens de aviso
+import tkinter.filedialog as filedialog                         # selecionar imagem
+from tkinter import ttk                                         # tabela / treeview
 from datetime import date
 
 try:
-    from PIL import Image, ImageTk
+    from PIL import Image, ImageTk                              # exibir/miniaturizar imagem
     PIL_OK = True
 except ImportError:
     PIL_OK = False
 
 
-COR_FUNDO_PRINCIPAL   = "#FAFAFA"
-COR_FUNDO_HEADER      = "#FAFAFA"
-COR_FUNDO_MENU        = "#FFFFFF"
-COR_BORDA             = "#E4E4E4"
-COR_TEXTO_TITULO      = "#1A1A1A"
-COR_TEXTO_ESCURO      = "#333333"
-COR_TEXTO_SUBTITULO   = "#8A8A8A"
-COR_BOTAO             = "#FFC504"
-COR_BOTAO_HOVER       = "#3A3A3A"
+# ==========================================================
+#  PALETA DE CORES E FONTES (estilo minimalista neutro)
+# ==========================================================
+COR_FUNDO_PRINCIPAL   = "#FAFAFA"   # quase branco, fundo geral
+COR_FUNDO_HEADER      = "#FAFAFA"   # mesmo tom do fundo, sem bloco colorido
+COR_FUNDO_MENU        = "#FFFFFF"   # branco, barra de menu
+COR_BORDA             = "#E4E4E4"   # cinza claro para linhas/bordas finas
+COR_TEXTO_TITULO      = "#1A1A1A"   # quase preto
+COR_TEXTO_ESCURO      = "#333333"   # cinza escuro, texto geral
+COR_TEXTO_SUBTITULO   = "#8A8A8A"   # cinza médio
+COR_BOTAO             = "#FFC504"   # preto suave
+COR_BOTAO_HOVER       = "#3A3A3A"   # cinza escuro (hover)
 COR_BOTAO_TEXTO       = "#FFFFFF"
-COR_BOTAO_SECUNDARIO       = "#FFFFFF"
+COR_BOTAO_SECUNDARIO       = "#FFFFFF"  # botões neutros com contorno
 COR_BOTAO_SECUNDARIO_HOVER = "#F0F0F0"
-COR_BOTAO_PERIGO      = "#B3261E"
+COR_BOTAO_PERIGO      = "#B3261E"   # vermelho discreto para deletar
 COR_BOTAO_PERIGO_HOVER = "#8C1D17"
 COR_TABELA_HEADER_BG  = "#FFFFFF"
 COR_TABELA_HEADER_FG  = "#1A1A1A"
@@ -32,7 +35,7 @@ COR_TABELA_LINHA_PAR  = "#FFFFFF"
 COR_TABELA_LINHA_IMPAR = "#F5F5F5"
 COR_TABELA_SELECAO    = "#1A1A1A"
 COR_IMAGEM_PLACEHOLDER = "#EAF4FB"
-COR_ACCENT            = "#5E8B85"
+COR_ACCENT            = "#5E8B85"   # verde-azulado dos botões do print
 
 FONTE_TITULO   = ("Segoe UI", 20, "normal")
 FONTE_SUBTITULO = ("Segoe UI", 10, "normal")
@@ -41,12 +44,10 @@ FONTE_ENTRY    = ("Segoe UI", 11)
 FONTE_TABELA   = ("Segoe UI", 10)
 FONTE_TABELA_HEADER = ("Segoe UI", 10, "bold")
 
-UNIDADES_PADRAO = [
-    "g", "kg", "mg", "ml", "l", "un", "dz", "cx", "pct", "fatia",
-    "colher de sopa", "colher de chá", "xícara", "pitada", "lata", "saco",
-]
 
-
+# ==========================================================
+#  ESTADO GLOBAL (referências de widgets usados entre funções)
+# ==========================================================
 entry_busca_ficha = None
 entry_busca_ingrediente = None
 
@@ -67,12 +68,19 @@ tabela_insumos = None
 label_total_valor = None
 
 
+# ==========================================================
+#  BANCO DE DADOS
+# ==========================================================
 def migrar_banco_dados(cursor):
+    """Ajusta tabelas antigas (se existirem) para o novo formato, sem apagar dados."""
+
+    # ingredientes: garante coluna unidade_medida
     cursor.execute("PRAGMA table_info(ingredientes)")
     colunas_ing = [c[1] for c in cursor.fetchall()]
     if colunas_ing and "unidade_medida" not in colunas_ing:
         cursor.execute("ALTER TABLE ingredientes ADD COLUMN unidade_medida TEXT")
 
+    # fichas: se a tabela antiga não tiver as colunas novas, renomeia para não colidir
     cursor.execute("PRAGMA table_info(fichas)")
     colunas_fichas = [c[1] for c in cursor.fetchall()]
     esperado = {"id", "preparo", "profissional", "criacao", "atualizacao",
@@ -87,12 +95,14 @@ def conectar_banco_dados():
 
     migrar_banco_dados(cursor)
 
+    # tabela de ingredientes (cadastro mestre)
     cursor.execute('''CREATE TABLE IF NOT EXISTS ingredientes(
             id INTEGER PRIMARY KEY,
             ingrediente TEXT NOT NULL,
             unidade_medida TEXT)
             ''')
 
+    # tabela de fichas técnicas
     cursor.execute('''CREATE TABLE IF NOT EXISTS fichas(
             id INTEGER PRIMARY KEY,
             preparo TEXT NOT NULL,
@@ -104,6 +114,7 @@ def conectar_banco_dados():
             rendimento TEXT)
             ''')
 
+    # tabela de insumos (linhas de ingredientes usados em cada ficha)
     cursor.execute('''CREATE TABLE IF NOT EXISTS insumos(
             id INTEGER PRIMARY KEY,
             ficha_id INTEGER NOT NULL,
@@ -120,7 +131,10 @@ def conectar_banco_dados():
     conexao.close()
 
 
+##########################  BOTÃO ESTILIZADO (helper)  ##########################
+
 def criar_botao(pai, texto, comando, cor=COR_ACCENT, cor_hover=COR_BOTAO_HOVER, texto_cor=COR_BOTAO_TEXTO):
+    """Cria um botão flat (formato 'pill') com efeito hover."""
     botao = tk.Button(
         pai,
         text=texto,
@@ -143,6 +157,7 @@ def criar_botao(pai, texto, comando, cor=COR_ACCENT, cor_hover=COR_BOTAO_HOVER, 
 
 
 def criar_botao_secundario(pai, texto, comando):
+    """Botão neutro com contorno fino, para ações menos críticas."""
     botao = criar_botao(
         pai, texto, comando,
         cor=COR_BOTAO_SECUNDARIO,
@@ -154,18 +169,19 @@ def criar_botao_secundario(pai, texto, comando):
 
 
 def criar_botao_icone(pai, simbolo, comando, cor):
+    """Botão para ações na tabela (Editar / Excluir)."""
     botao = tk.Button(
-        pai,
-        text=simbolo,
+        pai, 
+        text=simbolo, 
         command=comando,
-        font=("Segoe UI", 9, "bold"),
-        bg=cor,
+        font=("Segoe UI", 9, "bold"), 
+        bg=cor, 
         fg="#FFFFFF",
-        relief="flat",
-        bd=0,
-        padx=8,
-        pady=2,
-        cursor="hand2",
+        relief="flat", 
+        bd=0, 
+        padx=8,         
+        pady=2, 
+        cursor="hand2", 
         highlightthickness=0,
     )
     return botao
@@ -177,6 +193,7 @@ def limpar_janela():
 
 
 def criar_header(pai, titulo):
+    """Cabeçalho minimalista: título + linha fina de separação (igual em todas as telas)."""
     header = tk.Frame(pai, bg=COR_FUNDO_HEADER)
     header.pack(fill="x")
 
@@ -220,6 +237,10 @@ def configurar_estilo_treeview():
     estilo.layout("Treeview", [("Treeview.treearea", {"sticky": "nswe"})])
 
 
+# ==========================================================
+#  TELA 1 — FICHA TÉCNICA (formulário completo)
+# ==========================================================
+
 def _linha_campo(pai, rotulo, largura_rotulo=12):
     linha = tk.Frame(pai, bg=COR_FUNDO_PRINCIPAL)
     linha.pack(fill="x", pady=4)
@@ -247,6 +268,7 @@ def tela_ficha(ficha_id=None):
 
     criar_header(frame, "Ficha Técnica de Preparo")
 
+    # -------- barra de menu --------
     frame_menu = tk.Frame(frame, bg=COR_FUNDO_MENU)
     frame_menu.pack(fill="x", padx=20, pady=(16, 8))
     interno = tk.Frame(frame_menu, bg=COR_FUNDO_MENU)
@@ -264,6 +286,7 @@ def tela_ficha(ficha_id=None):
     criar_botao_secundario(interno, "Excluir", excluir_ficha).pack(side="left", padx=4, pady=5)
     criar_botao_secundario(interno, "Imprimir", imprimir_ficha).pack(side="left", padx=4, pady=5)
 
+    # -------- imagem + campos principais --------
     frame_topo = tk.Frame(frame, bg=COR_FUNDO_PRINCIPAL)
     frame_topo.pack(fill="x", padx=20, pady=8)
 
@@ -295,6 +318,7 @@ def tela_ficha(ficha_id=None):
                                   highlightthickness=1, highlightbackground=COR_BORDA, state="readonly")
     entry_atualizacao.pack(side="left", padx=8, ipady=3)
 
+    # -------- insumos --------
     tk.Label(frame, text="Insumos", font=FONTE_TITULO, bg=COR_FUNDO_PRINCIPAL,
               fg=COR_TEXTO_TITULO).pack(pady=(16, 4))
 
@@ -331,6 +355,7 @@ def tela_ficha(ficha_id=None):
                                   bg=COR_FUNDO_MENU, fg=COR_TEXTO_TITULO)
     label_total_valor.pack(side="right", padx=12, pady=8)
 
+    # -------- modo de preparo --------
     tk.Label(frame, text="Modo de Preparo", font=FONTE_TITULO, bg=COR_FUNDO_PRINCIPAL,
               fg=COR_TEXTO_TITULO).pack(pady=(16, 4))
     frame_modo = tk.Frame(frame, bg=COR_BORDA, padx=1, pady=1)
@@ -365,6 +390,7 @@ def imprimir_ficha():
     messagebox.showinfo("Imprimir", "Função de impressão em desenvolvimento.")
 
 
+# -------- imagem --------
 def selecionar_imagem():
     global imagem_atual_path
     caminho = filedialog.askopenfilename(
@@ -391,6 +417,7 @@ def exibir_imagem(caminho):
         label_imagem.config(text="Imagem inválida", image="")
 
 
+# -------- carregar / salvar ficha --------
 def carregar_ficha(ficha_id):
     conexao = sqlite3.connect("ficha_tecnica.db")
     cursor = conexao.cursor()
@@ -487,6 +514,7 @@ def excluir_ficha():
     tela_ficha(None)
 
 
+# -------- busca de fichas --------
 def pesquisar_ficha():
     termo = entry_busca_ficha.get().strip()
 
@@ -514,8 +542,6 @@ def tela_resultado_busca(resultados):
     frame_menu.pack(fill="x", padx=20, pady=(16, 8))
     interno = tk.Frame(frame_menu, bg=COR_FUNDO_MENU)
     interno.pack(anchor="center", pady=4)
-
-    criar_botao_secundario(interno, "Voltar", lambda: tela_ficha(None)).pack(side="left", padx=(0, 8))
 
     entrada = tk.Entry(interno, font=FONTE_ENTRY, width=18, relief="flat",
                         highlightthickness=1, highlightbackground=COR_BORDA)
@@ -549,6 +575,12 @@ def tela_resultado_busca(resultados):
         item.bind("<Enter>", lambda e, w=item: w.config(fg=COR_ACCENT))
         item.bind("<Leave>", lambda e, w=item: w.config(fg=COR_TEXTO_ESCURO))
 
+    criar_botao(frame, "Voltar", lambda: tela_ficha(None)).pack(pady=16, anchor="e", padx=20)
+
+
+# ==========================================================
+#  INSUMOS (linhas de ingrediente dentro de uma ficha)
+# ==========================================================
 
 def _formatar_moeda(valor):
     try:
@@ -589,6 +621,7 @@ def recalcular_total_insumos():
 
 
 def _popup_insumo(titulo, dados_iniciais, ao_salvar):
+    """Popup compartilhado por adicionar/editar insumo."""
     conexao = sqlite3.connect("ficha_tecnica.db")
     cursor = conexao.cursor()
     cursor.execute("SELECT ingrediente, unidade_medida FROM ingredientes ORDER BY ingrediente")
@@ -597,11 +630,10 @@ def _popup_insumo(titulo, dados_iniciais, ao_salvar):
 
     mapa_unidades = {nome: unidade for nome, unidade in ingredientes_cadastrados}
     nomes = list(mapa_unidades.keys())
-    unidades_cadastradas = sorted(UNIDADES_PADRAO)
 
     popup = tk.Toplevel()
     popup.title(titulo)
-    popup.geometry("340x420")
+    popup.geometry("340x380")
     popup.configure(bg=COR_FUNDO_PRINCIPAL)
     popup.grab_set()
 
@@ -615,59 +647,36 @@ def _popup_insumo(titulo, dados_iniciais, ao_salvar):
 
     tk.Label(popup, text="Ingrediente", font=("Segoe UI", 10), bg=COR_FUNDO_PRINCIPAL,
               fg=COR_TEXTO_ESCURO).pack(anchor="w", padx=20, pady=(10, 2))
-    combo_ingrediente = ttk.Combobox(popup, font=FONTE_ENTRY)
-    combo_ingrediente["values"] = nomes
+    combo_ingrediente = ttk.Combobox(popup, values=nomes, state="readonly", font=FONTE_ENTRY)
     combo_ingrediente.pack(fill="x", padx=20, ipady=2)
 
-    tk.Label(popup, text="Unidade de Medida", font=("Segoe UI", 10), bg=COR_FUNDO_PRINCIPAL,
-              fg=COR_TEXTO_ESCURO).pack(anchor="w", padx=20, pady=(10, 2))
-    combo_unidade = ttk.Combobox(popup, font=FONTE_ENTRY)
-    combo_unidade["values"] = unidades_cadastradas
-    combo_unidade.pack(fill="x", padx=20, ipady=2)
+    entry_unidade = _campo("Unidade de Medida")
+    entry_unidade.config(state="readonly")
 
     entry_qtd_comprada = _campo("Quantidade Comprada")
     entry_valor_comprado = _campo("Valor Comprado (R$)")
     entry_qtd_usada = _campo("Quantidade Usada")
 
-    def ao_selecionar_ingrediente(event=None):
-        unidade = mapa_unidades.get(combo_ingrediente.get(), "")
-        combo_unidade.set(unidade or "")
+    def ao_escolher_ingrediente(event=None):
+        unidade = mapa_unidades.get(combo_ingrediente.get(), "") or ""
+        entry_unidade.config(state="normal")
+        entry_unidade.delete(0, tk.END)
+        entry_unidade.insert(0, unidade)
+        entry_unidade.config(state="readonly")
 
-    def ao_digitar_ingrediente(event):
-        if event.keysym in ("Up", "Down", "Return", "Escape", "Tab"):
-            return
-        texto = combo_ingrediente.get()
-        texto_lower = texto.lower()
-        filtrados = [v for v in nomes if texto_lower in v.lower()] if texto_lower else nomes
-        combo_ingrediente["values"] = filtrados
-        if texto in mapa_unidades:
-            combo_unidade.set(mapa_unidades.get(texto) or "")
-
-    def ao_digitar_unidade(event):
-        if event.keysym in ("Up", "Down", "Return", "Escape", "Tab"):
-            return
-        texto = combo_unidade.get().lower()
-        filtrados = [v for v in unidades_cadastradas if texto in v.lower()] if texto else unidades_cadastradas
-        combo_unidade["values"] = filtrados
-
-    combo_ingrediente.bind("<<ComboboxSelected>>", ao_selecionar_ingrediente)
-    combo_ingrediente.bind("<KeyRelease>", ao_digitar_ingrediente)
-    combo_unidade.bind("<KeyRelease>", ao_digitar_unidade)
+    combo_ingrediente.bind("<<ComboboxSelected>>", ao_escolher_ingrediente)
 
     if dados_iniciais:
         combo_ingrediente.set(dados_iniciais.get("ingrediente", ""))
-        ao_selecionar_ingrediente()
-        if dados_iniciais.get("unidade"):
-            combo_unidade.set(dados_iniciais.get("unidade"))
+        ao_escolher_ingrediente()
         entry_qtd_comprada.insert(0, dados_iniciais.get("qtd_comprada", ""))
         entry_valor_comprado.insert(0, dados_iniciais.get("valor_comprado", ""))
         entry_qtd_usada.insert(0, dados_iniciais.get("qtd_usada", ""))
 
     def salvar():
         ingrediente = combo_ingrediente.get().strip()
-        unidade = combo_unidade.get().strip()
         if not ingrediente:
-            messagebox.showwarning("Aviso", "Informe um ingrediente.")
+            messagebox.showwarning("Aviso", "Selecione um ingrediente cadastrado.")
             return
         try:
             qtd_comprada = float(entry_qtd_comprada.get().replace(",", ".") or 0)
@@ -678,6 +687,7 @@ def _popup_insumo(titulo, dados_iniciais, ao_salvar):
             return
 
         valor_gasto = (valor_comprado / qtd_comprada) * qtd_usada if qtd_comprada else 0
+        unidade = mapa_unidades.get(ingrediente, "")
 
         ao_salvar(ingrediente, qtd_comprada, valor_comprado, qtd_usada, unidade, valor_gasto)
         popup.destroy()
@@ -719,7 +729,6 @@ def abrir_popup_editar_insumo():
         "qtd_comprada": valores[1],
         "valor_comprado": str(valores[2]).replace(",", "."),
         "qtd_usada": valores[3],
-        "unidade": valores[4],
     }
 
     def salvar(ingrediente, qc, vc, qu, unidade, vg):
@@ -754,6 +763,10 @@ def remover_insumo():
 
     atualizar_tabela_insumos(ficha_atual_id)
 
+
+# ==========================================================
+#  TELA 3 — INGREDIENTES (cadastro mestre, com ícones de ação)
+# ==========================================================
 
 def pesquisar_ingrediente():
     termo = entry_busca_ingrediente.get().strip()
@@ -795,9 +808,10 @@ def montar_lista_ingredientes(linhas):
         frame_acoes.pack(side="left", padx=12, pady=40)
         criar_botao_icone(frame_acoes, "Editar", lambda i=id_ing: abrir_popup_editar_ingrediente(i),
                            COR_BOTAO).pack(side="left", padx=3)
+        
+        # Botão de Excluir
         criar_botao_icone(frame_acoes, "Excluir", lambda i=id_ing: deletar_ingrediente(i),
                            COR_BOTAO_PERIGO).pack(side="left", padx=3)
-
 
 def atualizar_lista_ingredientes():
     conexao = sqlite3.connect("ficha_tecnica.db")
@@ -904,10 +918,6 @@ def tela_ingredientes():
 
     criar_header(frame, "Ficha Técnica de Preparo")
 
-    frame_topo_acoes = tk.Frame(frame, bg=COR_FUNDO_PRINCIPAL)
-    frame_topo_acoes.pack(fill="x", padx=20, pady=(12, 0))
-    criar_botao_secundario(frame_topo_acoes, "Voltar", lambda: tela_ficha(ficha_atual_id)).pack(side="left")
-
     frame_menu = tk.Frame(frame, bg=COR_FUNDO_MENU)
     frame_menu.pack(fill="x", padx=20, pady=(16, 8))
     interno = tk.Frame(frame_menu, bg=COR_FUNDO_MENU)
@@ -921,6 +931,7 @@ def tela_ingredientes():
     criar_botao_secundario(interno, "Pesquisar", pesquisar_ingrediente).pack(side="left", padx=4, pady=5)
     criar_botao(interno, "+ Adicionar", abrir_popup_adicionar_ingrediente).pack(side="left", padx=4, pady=5)
 
+    # cabeçalho da "tabela"
     frame_tabela = tk.Frame(frame, bg=COR_BORDA, padx=1, pady=1)
     frame_tabela.pack(fill="x", padx=40, pady=(8, 0))
     frame_cabecalho = tk.Frame(frame_tabela, bg=COR_TABELA_HEADER_BG)
@@ -935,11 +946,16 @@ def tela_ingredientes():
     frame_linhas_ingredientes = tk.Frame(frame_tabela, bg=COR_FUNDO_PRINCIPAL)
     frame_linhas_ingredientes.pack(fill="x")
 
+    criar_botao(frame, "Voltar", lambda: tela_ficha(ficha_atual_id)).pack(pady=20, anchor="e", padx=40)
+
     atualizar_lista_ingredientes()
 
 
+##########################   INÍCIO   ##########################
+
 conectar_banco_dados()
 
+# cria a janela principal
 janela = tk.Tk()
 janela.title("Maedu")
 janela.geometry("1920x1080")
