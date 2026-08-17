@@ -904,37 +904,231 @@ def tela_ingredientes():
 
     criar_header(frame, "Ficha Técnica de Preparo")
 
-    frame_topo_acoes = tk.Frame(frame, bg=COR_FUNDO_PRINCIPAL)
-    frame_topo_acoes.pack(fill="x", padx=20, pady=(12, 0))
-    criar_botao_secundario(frame_topo_acoes, "Voltar", lambda: tela_ficha(ficha_atual_id)).pack(side="left")
+    # -------------------------------
+    # Botão voltar
+    # -------------------------------
+    frame_topo_acoes = tk.Frame(
+        frame,
+        bg=COR_FUNDO_PRINCIPAL
+    )
+    frame_topo_acoes.pack(
+        fill="x",
+        padx=20,
+        pady=(12, 0)
+    )
 
-    frame_menu = tk.Frame(frame, bg=COR_FUNDO_MENU)
-    frame_menu.pack(fill="x", padx=20, pady=(16, 8))
-    interno = tk.Frame(frame_menu, bg=COR_FUNDO_MENU)
-    interno.pack(anchor="center", pady=4)
+    criar_botao_secundario(
+        frame_topo_acoes,
+        "Voltar",
+        lambda: tela_ficha(ficha_atual_id)
+    ).pack(side="left")
 
-    entry_busca_ingrediente = tk.Entry(interno, font=FONTE_ENTRY, relief="flat",
-                                        highlightthickness=1, highlightbackground=COR_BORDA,
-                                        highlightcolor=COR_TEXTO_ESCURO, width=22)
-    entry_busca_ingrediente.pack(side="left", padx=(0, 8), pady=5, ipady=5)
+    # -------------------------------
+    # Menu de ações
+    # -------------------------------
+    frame_menu = tk.Frame(
+        frame,
+        bg=COR_FUNDO_MENU
+    )
+    frame_menu.pack(
+        fill="x",
+        padx=20,
+        pady=(16, 8)
+    )
 
-    criar_botao_secundario(interno, "Pesquisar", pesquisar_ingrediente).pack(side="left", padx=4, pady=5)
-    criar_botao(interno, "+ Adicionar", abrir_popup_adicionar_ingrediente).pack(side="left", padx=4, pady=5)
+    interno = tk.Frame(
+        frame_menu,
+        bg=COR_FUNDO_MENU
+    )
+    interno.pack(
+        anchor="center",
+        pady=4
+    )
 
-    frame_tabela = tk.Frame(frame, bg=COR_BORDA, padx=1, pady=1)
-    frame_tabela.pack(fill="x", padx=40, pady=(8, 0))
-    frame_cabecalho = tk.Frame(frame_tabela, bg=COR_TABELA_HEADER_BG)
+    entry_busca_ingrediente = tk.Entry(
+        interno,
+        font=FONTE_ENTRY,
+        relief="flat",
+        highlightthickness=1,
+        highlightbackground=COR_BORDA,
+        highlightcolor=COR_TEXTO_ESCURO,
+        width=22
+    )
+    entry_busca_ingrediente.pack(
+        side="left",
+        padx=(0, 8),
+        pady=5,
+        ipady=5
+    )
+
+    criar_botao_secundario(
+        interno,
+        "Pesquisar",
+        pesquisar_ingrediente
+    ).pack(
+        side="left",
+        padx=4,
+        pady=5
+    )
+
+    criar_botao(
+        interno,
+        "+ Adicionar",
+        abrir_popup_adicionar_ingrediente
+    ).pack(
+        side="left",
+        padx=4,
+        pady=5
+    )
+
+    # -------------------------------
+    # Área da tabela
+    # -------------------------------
+    frame_tabela = tk.Frame(
+        frame,
+        bg=COR_BORDA,
+        padx=1,
+        pady=1
+    )
+    frame_tabela.pack(
+        fill="both",
+        expand=True,
+        padx=40,
+        pady=(8, 10)
+    )
+
+    # -------------------------------
+    # Cabeçalho da tabela
+    # -------------------------------
+    frame_cabecalho = tk.Frame(
+        frame_tabela,
+        bg=COR_TABELA_HEADER_BG
+    )
     frame_cabecalho.pack(fill="x")
-    tk.Label(frame_cabecalho, text="Ingrediente", font=FONTE_TABELA_HEADER, bg=COR_TABELA_HEADER_BG,
-              fg=COR_TABELA_HEADER_FG, width=32, anchor="w", padx=8, pady=8).pack(side="left")
-    tk.Label(frame_cabecalho, text="Unidade\nde Medida", font=FONTE_TABELA_HEADER, bg=COR_TABELA_HEADER_BG,
-              fg=COR_TABELA_HEADER_FG, width=14, anchor="center").pack(side="left")
-    tk.Label(frame_cabecalho, text="Ação", font=FONTE_TABELA_HEADER, bg=COR_TABELA_HEADER_BG,
-              fg=COR_TABELA_HEADER_FG, width=10, anchor="center").pack(side="left")
 
-    frame_linhas_ingredientes = tk.Frame(frame_tabela, bg=COR_FUNDO_PRINCIPAL)
-    frame_linhas_ingredientes.pack(fill="x")
+    tk.Label(
+        frame_cabecalho,
+        text="Ingrediente",
+        font=FONTE_TABELA_HEADER,
+        bg=COR_TABELA_HEADER_BG,
+        fg=COR_TABELA_HEADER_FG,
+        width=32,
+        anchor="w",
+        padx=8,
+        pady=8
+    ).pack(side="left")
 
+    tk.Label(
+        frame_cabecalho,
+        text="Unidade\nde Medida",
+        font=FONTE_TABELA_HEADER,
+        bg=COR_TABELA_HEADER_BG,
+        fg=COR_TABELA_HEADER_FG,
+        width=14,
+        anchor="center"
+    ).pack(side="left")
+
+    tk.Label(
+        frame_cabecalho,
+        text="Ação",
+        font=FONTE_TABELA_HEADER,
+        bg=COR_TABELA_HEADER_BG,
+        fg=COR_TABELA_HEADER_FG,
+        width=10,
+        anchor="center"
+    ).pack(side="left")
+
+    # -------------------------------
+    # Área com Scroll
+    # -------------------------------
+    frame_scroll = tk.Frame(
+        frame_tabela,
+        bg=COR_FUNDO_PRINCIPAL
+    )
+    frame_scroll.pack(
+        fill="both",
+        expand=True
+    )
+
+    canvas = tk.Canvas(
+        frame_scroll,
+        bg=COR_FUNDO_PRINCIPAL,
+        highlightthickness=0
+    )
+    canvas.pack(
+        side="left",
+        fill="both",
+        expand=True
+    )
+
+    scrollbar = tk.Scrollbar(
+        frame_scroll,
+        orient="vertical",
+        command=canvas.yview
+    )
+    scrollbar.pack(
+        side="right",
+        fill="y"
+    )
+
+    canvas.configure(
+        yscrollcommand=scrollbar.set
+    )
+
+    # -------------------------------
+    # Frame que receberá as linhas
+    # -------------------------------
+    frame_linhas_ingredientes = tk.Frame(
+        canvas,
+        bg=COR_FUNDO_PRINCIPAL
+    )
+
+    janela_canvas = canvas.create_window(
+        (0, 0),
+        window=frame_linhas_ingredientes,
+        anchor="nw"
+    )
+
+    # Atualiza a área disponível para rolagem
+    def atualizar_scroll(event=None):
+        canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+
+    frame_linhas_ingredientes.bind(
+        "<Configure>",
+        atualizar_scroll
+    )
+
+    # Faz o conteúdo acompanhar a largura do Canvas
+    def ajustar_largura(event):
+        canvas.itemconfig(
+            janela_canvas,
+            width=event.width
+        )
+
+    canvas.bind(
+        "<Configure>",
+        ajustar_largura
+    )
+
+    # -------------------------------
+    # Scroll com a roda do mouse
+    # -------------------------------
+    def scroll_mouse(event):
+        canvas.yview_scroll(
+            int(-1 * (event.delta / 120)),
+            "units"
+        )
+
+    canvas.bind_all(
+        "<MouseWheel>",
+        scroll_mouse
+    )
+
+    # -------------------------------
+    # Carrega os ingredientes
+    # -------------------------------
     atualizar_lista_ingredientes()
 
 
